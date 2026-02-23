@@ -1,0 +1,145 @@
+/* ── Root layout ─────────────────────────────────────────────────────── */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background: #131722;
+  color: #d1d4dc;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ── Error banner ────────────────────────────────────────────────────── */
+.banner-error {
+  background: #2d1515;
+  border-bottom: 1px solid #5c1f1f;
+  color: #ef5350;
+  padding: 7px 14px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+/* ── Summary strip ───────────────────────────────────────────────────── */
+.summary-strip {
+  display: flex;
+  background: #1a1d27;
+  border-bottom: 1px solid #2a2e39;
+  flex-shrink: 0;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 7px 14px;
+  border-right: 1px solid #2a2e39;
+  flex: 1;
+}
+
+.s-label {
+  font-size: 9px;
+  color: #5a5e6b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.s-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #d1d4dc;
+}
+
+.s-call { color: #26a69a; }
+.s-put  { color: #ef5350; }
+.s-spot { color: #00c4b4; }
+
+/* ── Chart area — fills remaining height ─────────────────────────────── */
+.chart-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+
+  /* Allow StrikeChart to scroll */
+  & > .strike-scroll { overflow-y: auto; flex: 1; }
+}
+
+/* ── Spinner ─────────────────────────────────────────────────────────── */
+.spinner-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex: 1;
+  color: #9598a1;
+  font-size: 13px;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #2a2e39;
+  border-top-color: #2962ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── No data message ─────────────────────────────────────────────────── */
+.no-data {
+  text-align: center;
+  color: #9598a1;
+  font-size: 13px;
+  padding: 40px 20px;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 8px;
+  color: #9598a1;
+  text-align: center;
+  padding: 40px 24px;
+}
+
+.empty-icon { font-size: 48px; margin-bottom: 6px; }
+
+.empty h2 {
+  color: #d1d4dc;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.empty p {
+  margin: 0;
+  font-size: 13px;
+  max-width: 300px;
+}
+
+.empty-note {
+  color: #5a5e6b !important;
+  font-size: 11px !important;
+  margin-top: 6px !important;
+}
+
+/* ── Desktop: content max-width so it doesn't stretch too wide ───────── */
+@media (min-width: 769px) {
+  .app {
+    max-width: 900px;
+    margin: 0 auto;
+    border-left: 1px solid #2a2e39;
+    border-right: 1px solid #2a2e39;
+  }
+
+  .summary-item { padding: 8px 20px; }
+  .s-value { font-size: 14px; }
+}
