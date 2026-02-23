@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { RESOLUTIONS } from '../utils/dataUtils';
 import { PROD_BASE_URL, TEST_BASE_URL } from '../api/deltaClient';
 import styles from './ControlBar.module.css';
+import {
+  IconSettings, IconSwap, IconBolt, IconChevronLeft,
+  IconChevronRight, IconRefresh,
+} from './Icons';
 
 const LOOKBACK_OPTIONS = [1, 2, 4, 6, 12, 24, 48, 72, 168];
 const AVAILABLE_ASSETS = ['BTC', 'ETH'];
@@ -58,7 +62,7 @@ export default function ControlBar({
             aria-label="Settings"
             title="Settings"
           >
-            ⚙
+            <IconSettings size={15} />
           </button>
 
           <label className={styles.labelWrap}>
@@ -90,7 +94,10 @@ export default function ControlBar({
         </div>
 
         <button className={styles.fetchBtn} onClick={onFetch} disabled={loading}>
-          {loading ? '⏳' : 'Fetch'}
+          {loading
+            ? <span className={styles.fetchSpinner} />
+            : <><IconRefresh size={13} /> Fetch</>
+          }
         </button>
       </div>
 
@@ -150,7 +157,7 @@ export default function ControlBar({
       {/* ── Row 2: Asset · Type · Strike / Spot pills ────────────── */}
       <div className={styles.row}>
         <button className={styles.assetBtn} onClick={onAssetToggle} title="Switch asset">
-          {asset}<span className={styles.arrow}>⇄</span>
+          {asset}<span className={styles.arrow}><IconSwap size={12} /></span>
         </button>
 
         <button
@@ -158,15 +165,20 @@ export default function ControlBar({
           onClick={onOptTypeToggle}
           title="Switch option type"
         >
-          {optType === 'call' ? 'CE' : 'PE'}<span className={styles.arrow}>⇄</span>
+          {optType === 'call' ? 'CE' : 'PE'}<span className={styles.arrow}><IconSwap size={12} /></span>
         </button>
 
         <div className={styles.pills}>
           {strike != null && (
-            <span className={styles.strikePill}>⚡ {Number(strike).toLocaleString()}</span>
+            <span className={styles.strikePill}>
+              <IconBolt size={10} />
+              {Number(strike).toLocaleString()}
+            </span>
           )}
           {spot != null && (
-            <span className={styles.spotPill}>${Number(spot).toLocaleString()}</span>
+            <span className={styles.spotPill}>
+              <span className={styles.spotDollar}>$</span>{Number(spot).toLocaleString()}
+            </span>
           )}
         </div>
       </div>
@@ -178,7 +190,9 @@ export default function ControlBar({
           onClick={() => onSymNav(-1)}
           disabled={symIdx <= 0}
           aria-label="Previous symbol"
-        >‹</button>
+        >
+          <IconChevronLeft size={18} />
+        </button>
 
         <div className={styles.symCenter}>
           <span className={styles.symName}>
@@ -186,7 +200,9 @@ export default function ControlBar({
           </span>
           {symbols.length > 0 && (
             <span className={styles.symMeta}>
-              {symIdx + 1} / {symbols.length} · nearest expiry · ±20 strikes ATM
+              {symIdx + 1}&thinsp;/&thinsp;{symbols.length}
+              <span className={styles.symDot}>·</span>nearest expiry
+              <span className={styles.symDot}>·</span>±20 strikes ATM
             </span>
           )}
         </div>
@@ -196,7 +212,9 @@ export default function ControlBar({
           onClick={() => onSymNav(1)}
           disabled={symIdx >= symbols.length - 1}
           aria-label="Next symbol"
-        >›</button>
+        >
+          <IconChevronRight size={18} />
+        </button>
       </div>
 
     </div>

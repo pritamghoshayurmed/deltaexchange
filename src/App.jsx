@@ -4,6 +4,7 @@ import CandlestickChart from './components/CandlestickChart';
 import StrikeChart      from './components/StrikeChart';
 import useDeltaData     from './hooks/useDeltaData';
 import { createDeltaClient, PROD_BASE_URL } from './api/deltaClient';
+import { IconAlertTriangle, IconBarChart } from './components/Icons';
 import './App.css';
 
 const DEFAULT_SETTINGS = {
@@ -71,8 +72,18 @@ export default function App() {
     });
 
     // 4. Up to 20 below ATM + ATM + up to 20 above ATM = max 41
-    const start = Math.max(0, atmIdx - 20);
-    const end   = Math.min(expiryRecords.length, atmIdx + 21);
+    //    Rebalance: if ATM is near an edge, extend the opposite side
+    const TARGET = 41;
+    let start = Math.max(0, atmIdx - 20);
+    let end   = Math.min(expiryRecords.length, atmIdx + 21);
+    const have = end - start;
+    if (have < Math.min(TARGET, expiryRecords.length)) {
+      if (start === 0) {
+        end = Math.min(expiryRecords.length, TARGET);
+      } else {
+        start = Math.max(0, end - TARGET);
+      }
+    }
     return expiryRecords.slice(start, end);
   }, [data, optType]);
 
@@ -138,7 +149,12 @@ export default function App() {
       {/* Error banner */}
       {errors.length > 0 && (
         <div className="banner-error">
-          {errors.map((e, i) => <div key={i}>⚠ {e}</div>)}
+          {errors.map((e, i) => (
+            <div key={i} className="banner-error-row">
+              <IconAlertTriangle size={13} color="#ef5350" />
+              {e}
+            </div>
+          ))}
         </div>
       )}
 
@@ -213,7 +229,9 @@ export default function App() {
         {/* Empty state */}
         {!loading && !data && (
           <div className="empty">
-            <div className="empty-icon">📊</div>
+            <div className="empty-icon">
+              <IconBarChart size={48} color="#2a2e3e" />
+            </div>
             <h2>No data yet</h2>
             <p>Tap <strong>Fetch</strong> to load the option chain.</p>
             <p className="empty-note">Uses the Delta Exchange public REST API — no auth required.</p>
