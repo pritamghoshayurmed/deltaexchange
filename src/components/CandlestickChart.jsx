@@ -54,6 +54,10 @@ function buildOptions(symbol, optionType, resolution, chartData) {
       animation: { duration: 200 },
       plotBorderColor: '#1e2236',
       plotBorderWidth: 0,
+      // ── TradingView-style interaction ──
+      zoomType: 'x',
+      panning: { enabled: true, type: 'x' },
+      panKey: 'shift',
     },
     rangeSelector: { enabled: false },
     navigator: {
@@ -94,6 +98,10 @@ function buildOptions(symbol, optionType, resolution, chartData) {
       gridLineWidth: 1,
       lineColor: '#2a2e3e',
       tickColor: '#2a2e3e',
+      // Allow the user to zoom/pan beyond the raw data range
+      minPadding: 0.05,
+      maxPadding: 0.05,
+      minRange: resolution * 5 * 60 * 1000,
       crosshair: {
         color: '#3a4060',
         width: 1,
@@ -123,6 +131,11 @@ function buildOptions(symbol, optionType, resolution, chartData) {
         opposite: true,
         tickLength: 0,
         lineWidth: 0,
+        // Prevent Highcharts from auto-rescaling the price axis on X-pan/zoom
+        startOnTick: false,
+        endOnTick: false,
+        minPadding: 0,
+        maxPadding: 0,
         crosshair: {
           color: '#3a4060',
           width: 1,
@@ -156,6 +169,32 @@ function buildOptions(symbol, optionType, resolution, chartData) {
         tickLength: 0,
         lineWidth: 0,
         maxPadding: 0.08,
+      },
+      {
+        // ── RSI panel — fixed 0–100, no auto-padding ──
+        title: { text: null },
+        labels: {
+          style: { color: '#4a4e5e', fontSize: '9px' },
+          align: 'left', x: 5, y: 3,
+          formatter() { return String(this.value); },
+        },
+        gridLineColor: '#141720',
+        top: '74%',
+        height: '26%',
+        offset: 0,
+        opposite: true,
+        tickLength: 0,
+        lineWidth: 0,
+        min: 0,
+        max: 100,
+        startOnTick: false,
+        endOnTick: false,
+        minPadding: 0,
+        maxPadding: 0,
+        plotLines: [
+          { value: 30, color: '#2a2e3e', width: 1, dashStyle: 'Dot' },
+          { value: 70, color: '#2a2e3e', width: 1, dashStyle: 'Dot' },
+        ],
       },
     ],
     tooltip: {
@@ -214,6 +253,29 @@ export default function CandlestickChart({ asset, symbol, optionType, resolution
     requestAnimationFrame(() => {
       try { chart.reflow(); } catch (_) {/* ignore */}
     });
+
+    // ── Y-axis wheel zoom ──────────────────────────────────────────────────────
+    // Scroll up → zoom in, scroll down → zoom out, centred on the midpoint.
+    // Does NOT touch the X-axis — horizontal zoom stays drag-based.
+    const container = chart.container;
+    function handleWheel(e) {
+      e.preventDefault();
+      const axis = chart.yAxis[0];
+      const { min, max } = axis.getExtremes();
+      const range  = max - min;
+      const factor = e.deltaY > 0 ? 1.15 : 1 / 1.15; // down → zoom out, up → zoom in
+      const centre = (min + max) / 2;
+      const half   = (range * factor) / 2;
+      axis.setExtremes(centre - half, centre + half, true, false);
+    }
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    // Remove listener when Highcharts tears down the chart instance
+    const origDestroy = chart.destroy.bind(chart);
+    chart.destroy = () => {
+      container.removeEventListener('wheel', handleWheel);
+      origDestroy();
+    };
   }, []);
 
   const options = useMemo(
