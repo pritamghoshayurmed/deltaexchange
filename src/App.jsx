@@ -92,7 +92,7 @@ export default function App() {
   useEffect(() => { if (!loading) setSymIdx(0); }, [loading]);
 
   const symbol        = symbols[symIdx] ?? null;
-  const spot          = data?.records?.find((r) => r.spot_price)?.spot_price ?? null;
+  const spot          = data?.records?.find((r) => r.spot_price != null)?.spot_price ?? null;
   const strikeRecords = useMemo(
     () => data?.records?.filter((r) => r.option_type === optType) ?? [],
     [data, optType]
@@ -204,6 +204,7 @@ export default function App() {
             </div>
           ) : candleData ? (
             <CandlestickChart
+              key={candleData.symbol}
               asset={asset}
               symbol={candleData.symbol}
               optionType={candleData.option_type}

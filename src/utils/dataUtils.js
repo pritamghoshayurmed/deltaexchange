@@ -59,6 +59,12 @@ function parseOptionSymbol(symbol) {
 
 // ─── Normalization ─────────────────────────────────────────────────────────────
 
+/** parseFloat but returns null instead of NaN; never coerces 0 → null */
+function toNum(v) {
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+
 function normalizeTicker(ticker) {
   const sym = parseOptionSymbol(ticker.symbol);
   if (!sym) return null;
@@ -74,18 +80,18 @@ function normalizeTicker(ticker) {
     expiry_date:   sym.expiryDate,
     expiry_ms:     sym.expiryMs,
     expiry_raw:    sym.expiryRaw,
-    mark_price:    parseFloat(ticker.mark_price) || null,
-    spot_price:    parseFloat(ticker.spot_price) || null,
-    bid_price:     parseFloat(quotes.best_bid)   || null,
-    ask_price:     parseFloat(quotes.best_ask)   || null,
-    bid_iv:        parseFloat(quotes.bid_iv)     || null,
-    ask_iv:        parseFloat(quotes.ask_iv)     || null,
-    open_interest: parseFloat(ticker.oi)         || null,
-    volume:        parseFloat(ticker.volume)     || null,
-    delta:         parseFloat(greeks.delta)      || null,
-    gamma:         parseFloat(greeks.gamma)      || null,
-    theta:         parseFloat(greeks.theta)      || null,
-    vega:          parseFloat(greeks.vega)       || null,
+    mark_price:    toNum(ticker.mark_price),
+    spot_price:    toNum(ticker.spot_price),
+    bid_price:     toNum(quotes.best_bid),
+    ask_price:     toNum(quotes.best_ask),
+    bid_iv:        toNum(quotes.bid_iv),
+    ask_iv:        toNum(quotes.ask_iv),
+    open_interest: toNum(ticker.oi),
+    volume:        toNum(ticker.volume),
+    delta:         toNum(greeks.delta),
+    gamma:         toNum(greeks.gamma),
+    theta:         toNum(greeks.theta),
+    vega:          toNum(greeks.vega),
   };
 }
 
