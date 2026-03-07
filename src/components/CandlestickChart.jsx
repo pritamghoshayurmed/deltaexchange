@@ -6,6 +6,10 @@ import { IconCandlestick } from './Icons';
 
 const HighchartsReact = _HighchartsReact.default ?? _HighchartsReact;
 
+function formatFixed(value, digits = 2) {
+  return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '';
+}
+
 function buildOptions(symbol, optionType, resolution, chartData) {
   const parsed = buildCandlestickSeries(chartData);
   const isCall = optionType === 'call';
@@ -164,7 +168,7 @@ function buildOptions(symbol, optionType, resolution, chartData) {
             backgroundColor: '#2a2e3e',
             borderRadius: 4,
             style: { color: '#c8cbda', fontSize: '10px' },
-            formatter() { return this.value.toFixed(2); },
+            formatter() { return formatFixed(this.value, 2); },
           },
         },
       },
@@ -181,7 +185,7 @@ function buildOptions(symbol, optionType, resolution, chartData) {
         labels: {
           style: { color: '#8c84ae', fontSize: '9px' },
           align: 'left', x: 5, y: 3,
-          formatter() { return this.value.toFixed(2); },
+          formatter() { return formatFixed(this.value, 2); },
         },
         gridLineColor: '#141720',
         top: '76%',
@@ -348,7 +352,10 @@ export default function CandlestickChart({ asset, symbol, optionType, resolution
       pinchState.axis.setExtremes(min, max, true, false, { trigger: 'pinch' });
     }
 
-    function handleTouchEnd() {
+    function handleTouchEnd(event) {
+      if (pinchState && event) {
+        event.stopPropagation();
+      }
       if (pinchState && chart.pointer) {
         chart.pointer.hasDragged = false;
       }
