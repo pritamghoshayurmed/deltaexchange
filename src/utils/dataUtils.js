@@ -154,17 +154,24 @@ export function buildStrikeSeriesForExpiry(rows, metric = 'mark_price') {
   return series;
 }
 
-export function buildCandlestickSeries(chartData) {
+export function buildCandlestickSeries(chartData, visibleFromMs = null) {
   if (!chartData?.t?.length) return null;
   const { t, o, h, l, c, v } = chartData;
   const rsi = calculateRsi(c, 14);
 
+  const visibleCutoff = typeof visibleFromMs === 'number' ? visibleFromMs : null;
+
   return {
-    ohlcData: t.map((time, i) => [time * 1000, o[i], h[i], l[i], c[i]]),
-    volData:  t.map((time, i) => [time * 1000, v?.[i] ?? 0]),
+    ohlcData: t
+      .map((time, i) => [time * 1000, o[i], h[i], l[i], c[i]])
+      .filter(([time]) => visibleCutoff == null || time >= visibleCutoff),
+    volData:  t
+      .map((time, i) => [time * 1000, v?.[i] ?? 0])
+      .filter(([time]) => visibleCutoff == null || time >= visibleCutoff),
     rsiData:  t
       .map((time, i) => (rsi[i] == null ? null : [time * 1000, Number(rsi[i].toFixed(2))]))
-      .filter(Boolean),
+      .filter(Boolean)
+      .filter(([time]) => visibleCutoff == null || time >= visibleCutoff),
   };
 }
 

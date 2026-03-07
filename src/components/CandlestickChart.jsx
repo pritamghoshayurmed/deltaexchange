@@ -5,16 +5,47 @@ import { buildCandlestickSeries } from '../utils/dataUtils';
 import { IconCandlestick } from './Icons';
 
 const HighchartsReact = _HighchartsReact.default ?? _HighchartsReact;
+const IST_TIMEZONE = 'Asia/Kolkata';
+
+function formatIstDateTime(value, { showZone = false } = {}) {
+  const parts = new Intl.DateTimeFormat('en-IN', {
+    timeZone: IST_TIMEZONE,
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date(value));
+
+  const lookup = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const label = `${lookup.month} ${lookup.day} ${lookup.hour}:${lookup.minute}`;
+  return showZone ? `${label} IST` : label;
+}
+
+function formatIstAxisLabel(value) {
+  const parts = new Intl.DateTimeFormat('en-IN', {
+    timeZone: IST_TIMEZONE,
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date(value));
+
+  const lookup = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${lookup.month} ${lookup.day}<br>${lookup.hour}:${lookup.minute}`;
+}
 
 function formatFixed(value, digits = 2) {
   return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(digits) : '';
 }
 
-function buildOptions(symbol, optionType, resolution, chartData) {
-  const parsed = buildCandlestickSeries(chartData);
+function buildOptions(symbol, optionType, resolution, chartData, visibleFromMs) {
+  const parsed = buildCandlestickSeries(chartData, visibleFromMs);
   const isCall = optionType === 'call';
   const accentColor = isCall ? '#26a69a' : '#ef5350';
   const rsiColor = '#7f63ff';
+  const hasRsi = Boolean(parsed?.rsiData?.length);
 
   const series = parsed
     ? [
@@ -69,7 +100,7 @@ function buildOptions(symbol, optionType, resolution, chartData) {
       style: { fontFamily: 'Inter, Segoe UI, system-ui, sans-serif' },
       height: null,
       width: null,
-      margin: [24, 68, 0, 0],
+      margin: [24, 68, 34, 0],
       spacing: [4, 4, 4, 4],
       animation: { duration: 200 },
       plotBorderColor: '#1e2236',
@@ -77,10 +108,13 @@ function buildOptions(symbol, optionType, resolution, chartData) {
       zooming: {
         type: 'x',
         pinchType: 'x',
-        mouseWheel: { enabled: true },
+        mouseWheel: { enabled: true, type: 'x' },
       },
       panning: { enabled: true, type: 'x' },
       panKey: 'shift',
+    },
+    time: {
+      timezone: IST_TIMEZONE,
     },
     rangeSelector: { enabled: false },
     navigator: {
@@ -113,17 +147,24 @@ function buildOptions(symbol, optionType, resolution, chartData) {
     title: { text: '' },
     xAxis: {
       type: 'datetime',
+      ordinal: false,
       labels: {
         style: { color: '#737890', fontSize: '10px' },
-        format: '{value:%b %d<br>%H:%M}',
+        reserveSpace: true,
+        y: 18,
+        formatter() {
+          return formatIstAxisLabel(this.value);
+        },
       },
       gridLineColor: '#1a1e2e',
       gridLineWidth: 1,
       lineColor: '#2a2e3e',
       tickColor: '#2a2e3e',
-      minPadding: 0.05,
-      maxPadding: 0.05,
+      minPadding: 0.16,
+      maxPadding: 0.2,
+      tickPixelInterval: 96,
       minRange: resolution * 5 * 60 * 1000,
+      overscroll: resolution * 2 * 60 * 1000,
       crosshair: {
         color: '#3a4060',
         width: 1,
@@ -174,7 +215,7 @@ function buildOptions(symbol, optionType, resolution, chartData) {
       },
       {
         title: {
-          text: 'RSI 14',
+          text: hasRsi ? 'RSI 14' : 'RSI unavailable',
           align: 'high',
           offset: 0,
           rotation: 0,
@@ -230,7 +271,7 @@ function buildOptions(symbol, optionType, resolution, chartData) {
         if (p.open !== undefined) {
           const color = p.close >= p.open ? '#26a69a' : '#ef5350';
           const chg = p.open > 0 ? ((p.close - p.open) / p.open * 100).toFixed(2) : '—';
-          const dt = Highcharts.dateFormat('%b %d %H:%M', this.x);
+          const dt = formatIstDateTime(this.x, { showZone: true });
           return `
             <div style="font-size:10px;color:#4a4e5e;margin-bottom:5px">${dt}</div>
             <table style="border-collapse:collapse;font-size:11px">
@@ -247,8 +288,9 @@ function buildOptions(symbol, optionType, resolution, chartData) {
     },
     plotOptions: {
       candlestick: {
-        groupPadding: 0.08,
-        pointPadding: 0.02,
+        groupPadding: 0.18,
+        pointPadding: 0.08,
+        pointWidth: 14,
         lineWidth: 1.5,
       },
       series: {
@@ -263,7 +305,7 @@ function buildOptions(symbol, optionType, resolution, chartData) {
   };
 }
 
-export default function CandlestickChart({ asset, symbol, optionType, resolution, chartData }) {
+export default function CandlestickChart({ asset, symbol, optionType, resolution, chartData, visibleFromMs }) {
   const chartRef = useRef(null);
   const isCall   = optionType === 'call';
   const label    = isCall ? 'CE' : 'PE';
@@ -378,12 +420,13 @@ export default function CandlestickChart({ asset, symbol, optionType, resolution
   }, []);
 
   const options = useMemo(
-    () => buildOptions(symbol, optionType, resolution, chartData),
-    [symbol, optionType, resolution, chartData]
+    () => buildOptions(symbol, optionType, resolution, chartData, visibleFromMs),
+    [symbol, optionType, resolution, chartData, visibleFromMs]
   );
 
-  const noData = !chartData || !chartData.t?.length;
-  const candleCount = chartData?.t?.length ?? 0;
+  const visibleTimestamps = chartData?.t?.filter((time) => !visibleFromMs || time * 1000 >= visibleFromMs) ?? [];
+  const noData = visibleTimestamps.length === 0;
+  const candleCount = visibleTimestamps.length;
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>

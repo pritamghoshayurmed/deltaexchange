@@ -9,10 +9,10 @@ import './App.css';
 
 const DEFAULT_SETTINGS = {
   baseUrl:         PROD_BASE_URL,
-  assets:          ['BTC', 'ETH'],
+  assets:          ['ETH', 'BTC'],
   minOpenInterest: 0,
   candlestick:     true,
-  resolution:      60,
+  resolution:      240,
   lookbackHours:   72,
   topPerType:      5,
 };
@@ -42,7 +42,7 @@ export default function App() {
   /* ── Derived data ── */
   const assets          = [...assetData.keys()];
   const effectiveAssets = assets.length > 0 ? assets : settings.assets;
-  const asset           = effectiveAssets[assetIdx % effectiveAssets.length] ?? 'BTC';
+  const asset           = effectiveAssets[assetIdx % effectiveAssets.length] ?? 'ETH';
   const data            = assetData.get(asset) ?? (assets.length > 0 ? assetData.get(assets[0]) : null);
 
   /* ── Symbols: nearest expiry, ±20 strikes around ATM = max 41 ── */
@@ -110,17 +110,29 @@ export default function App() {
 
     const client   = createDeltaClient(settings.baseUrl);
     const nowSec   = Math.floor(Date.now() / 1000);
-    const startSec = nowSec - settings.lookbackHours * 3600;
+    const visibleStartSec = nowSec - settings.lookbackHours * 3600;
+    const rsiWarmupSec = settings.resolution * 60 * 14;
+    const fetchStartSec = visibleStartSec - rsiWarmupSec;
 
     client
-      .getOhlcCandles(symbol.symbol, settings.resolution, startSec, nowSec)
+      .getOhlcCandles(symbol.symbol, settings.resolution, fetchStartSec, nowSec)
       .then((cd) => {
         if (!cancelled)
-          setCandleData({ symbol: symbol.symbol, option_type: symbol.option_type, chartData: cd });
+          setCandleData({
+            symbol: symbol.symbol,
+            option_type: symbol.option_type,
+            visibleFromMs: visibleStartSec * 1000,
+            chartData: cd,
+          });
       })
       .catch(() => {
         if (!cancelled)
-          setCandleData({ symbol: symbol.symbol, option_type: symbol.option_type, chartData: null });
+          setCandleData({
+            symbol: symbol.symbol,
+            option_type: symbol.option_type,
+            visibleFromMs: visibleStartSec * 1000,
+            chartData: null,
+          });
       })
       .finally(() => { if (!cancelled) setCandleLoading(false); });
 
@@ -209,6 +221,7 @@ export default function App() {
               symbol={candleData.symbol}
               optionType={candleData.option_type}
               resolution={settings.resolution}
+              visibleFromMs={candleData.visibleFromMs}
               chartData={candleData.chartData}
             />
           ) : (
