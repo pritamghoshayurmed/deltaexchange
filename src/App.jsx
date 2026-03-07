@@ -13,7 +13,7 @@ const DEFAULT_SETTINGS = {
   minOpenInterest: 0,
   candlestick:     true,
   resolution:      60,
-  lookbackHours:   24,
+  lookbackHours:   72,
   topPerType:      5,
 };
 

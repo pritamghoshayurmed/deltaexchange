@@ -10,10 +10,12 @@ function buildOptions(symbol, optionType, resolution, chartData) {
   const parsed = buildCandlestickSeries(chartData);
   const isCall = optionType === 'call';
   const accentColor = isCall ? '#26a69a' : '#ef5350';
+  const rsiColor = '#7f63ff';
 
   const series = parsed
     ? [
         {
+          id: 'price-series',
           type: 'candlestick',
           name: symbol,
           data: parsed.ohlcData,
@@ -28,15 +30,29 @@ function buildOptions(symbol, optionType, resolution, chartData) {
           },
         },
         {
-          type: 'column',
-          name: 'Volume',
-          data: parsed.volData,
-          color: 'rgba(84,110,122,0.55)',
+          type: 'line',
+          name: 'RSI 14',
+          data: parsed.rsiData,
+          color: rsiColor,
           yAxis: 1,
           dataGrouping: { enabled: false },
-          borderWidth: 0,
-          pointPadding: 0.05,
-          groupPadding: 0.03,
+          lineWidth: 1.8,
+          marker: { enabled: false },
+          states: {
+            hover: { lineWidthPlus: 0 },
+          },
+          lastPrice: {
+            enabled: true,
+            color: rsiColor,
+            label: {
+              enabled: true,
+              backgroundColor: rsiColor,
+              borderColor: rsiColor,
+              borderRadius: 4,
+              style: { color: '#f5f4ff', fontSize: '10px', fontWeight: 700 },
+              padding: 4,
+            },
+          },
         },
       ]
     : [{ type: 'candlestick', name: 'No data', data: [] }];
@@ -54,8 +70,11 @@ function buildOptions(symbol, optionType, resolution, chartData) {
       animation: { duration: 200 },
       plotBorderColor: '#1e2236',
       plotBorderWidth: 0,
-      // ── TradingView-style interaction ──
-      zoomType: 'x',
+      zooming: {
+        type: 'x',
+        pinchType: 'x',
+        mouseWheel: { enabled: true },
+      },
       panning: { enabled: true, type: 'x' },
       panKey: 'shift',
     },
@@ -98,7 +117,6 @@ function buildOptions(symbol, optionType, resolution, chartData) {
       gridLineWidth: 1,
       lineColor: '#2a2e3e',
       tickColor: '#2a2e3e',
-      // Allow the user to zoom/pan beyond the raw data range
       minPadding: 0.05,
       maxPadding: 0.05,
       minRange: resolution * 5 * 60 * 1000,
@@ -122,7 +140,7 @@ function buildOptions(symbol, optionType, resolution, chartData) {
           },
         },
         gridLineColor: '#1a1e2e',
-        height: '72%',
+        height: '74%',
         resize: {
           enabled: true,
           lineColor: '#2e3248',
@@ -151,49 +169,45 @@ function buildOptions(symbol, optionType, resolution, chartData) {
         },
       },
       {
-        title: { text: null },
+        title: {
+          text: 'RSI 14',
+          align: 'high',
+          offset: 0,
+          rotation: 0,
+          x: -10,
+          y: 12,
+          style: { color: '#9b8cff', fontSize: '10px', fontWeight: 600 },
+        },
         labels: {
-          style: { color: '#4a4e5e', fontSize: '9px' },
+          style: { color: '#8c84ae', fontSize: '9px' },
           align: 'left', x: 5, y: 3,
-          formatter() {
-            const v = this.value;
-            if (v === 0) return '0';
-            return v >= 1000 ? (v / 1000).toFixed(0) + 'k' : String(v);
-          },
+          formatter() { return this.value.toFixed(2); },
         },
         gridLineColor: '#141720',
-        top: '74%',
-        height: '26%',
+        top: '76%',
+        height: '24%',
         offset: 0,
         opposite: true,
         tickLength: 0,
         lineWidth: 0,
-        maxPadding: 0.08,
-      },
-      {
-        // ── RSI panel — fixed 0–100, no auto-padding ──
-        title: { text: null },
-        labels: {
-          style: { color: '#4a4e5e', fontSize: '9px' },
-          align: 'left', x: 5, y: 3,
-          formatter() { return String(this.value); },
-        },
-        gridLineColor: '#141720',
-        top: '74%',
-        height: '26%',
-        offset: 0,
-        opposite: true,
-        tickLength: 0,
-        lineWidth: 0,
-        min: 0,
+        min: 20,
         max: 100,
         startOnTick: false,
         endOnTick: false,
         minPadding: 0,
         maxPadding: 0,
+        tickPositions: [20, 30, 40, 50, 60, 70, 80],
+        plotBands: [
+          {
+            from: 20,
+            to: 100,
+            color: 'rgba(89, 70, 164, 0.12)',
+          },
+        ],
         plotLines: [
-          { value: 30, color: '#2a2e3e', width: 1, dashStyle: 'Dot' },
-          { value: 70, color: '#2a2e3e', width: 1, dashStyle: 'Dot' },
+          { value: 30, color: '#8577c9', width: 1, dashStyle: 'Dash' },
+          { value: 50, color: '#3a2f66', width: 1, dashStyle: 'Dot' },
+          { value: 70, color: '#8577c9', width: 1, dashStyle: 'Dash' },
         ],
       },
     ],
@@ -224,7 +238,7 @@ function buildOptions(symbol, optionType, resolution, chartData) {
             <div style="margin-top:4px;font-size:10px;color:${color}">${chg > 0 ? '+' : ''}${chg}%</div>
           `;
         }
-        return `Vol: <b>${this.y}</b>`;
+        return `RSI 14: <b>${Number(this.y).toFixed(2)}</b>`;
       },
     },
     plotOptions: {
@@ -233,7 +247,10 @@ function buildOptions(symbol, optionType, resolution, chartData) {
         pointPadding: 0.02,
         lineWidth: 1.5,
       },
-      column: { borderRadius: 0 },
+      series: {
+        animation: false,
+        turboThreshold: 0,
+      },
     },
     legend:      { enabled: false },
     credits:     { enabled: false },
@@ -254,26 +271,101 @@ export default function CandlestickChart({ asset, symbol, optionType, resolution
       try { chart.reflow(); } catch (_) {/* ignore */}
     });
 
-    // ── Y-axis wheel zoom ──────────────────────────────────────────────────────
-    // Scroll up → zoom in, scroll down → zoom out, centred on the midpoint.
-    // Does NOT touch the X-axis — horizontal zoom stays drag-based.
     const container = chart.container;
-    function handleWheel(e) {
-      e.preventDefault();
-      const axis = chart.yAxis[0];
-      const { min, max } = axis.getExtremes();
-      const range  = max - min;
-      const factor = e.deltaY > 0 ? 1.15 : 1 / 1.15; // down → zoom out, up → zoom in
-      const centre = (min + max) / 2;
-      const half   = (range * factor) / 2;
-      axis.setExtremes(centre - half, centre + half, true, false);
-    }
-    container.addEventListener('wheel', handleWheel, { passive: false });
+    container.style.touchAction = 'none';
 
-    // Remove listener when Highcharts tears down the chart instance
+    let pinchState = null;
+
+    function normalizeTouch(touch) {
+      return chart.pointer.normalize(touch);
+    }
+
+    function clampRange(axis, nextMin, nextMax) {
+      const extremes = axis.getExtremes();
+      const totalRange = Math.max((extremes.dataMax ?? 0) - (extremes.dataMin ?? 0), axis.minRange || 1);
+      const minRange = axis.minRange || axis.options.minRange || 1;
+      const range = Math.min(Math.max(nextMax - nextMin, minRange), totalRange);
+
+      let min = nextMin;
+      let max = min + range;
+
+      if (extremes.dataMin != null && min < extremes.dataMin) {
+        min = extremes.dataMin;
+        max = min + range;
+      }
+      if (extremes.dataMax != null && max > extremes.dataMax) {
+        max = extremes.dataMax;
+        min = max - range;
+      }
+
+      return { min, max };
+    }
+
+    function handleTouchStart(event) {
+      if (event.touches.length !== 2) {
+        pinchState = null;
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const axis = chart.xAxis[0];
+      const first = normalizeTouch(event.touches[0]);
+      const second = normalizeTouch(event.touches[1]);
+      const midpoint = (first.chartX + second.chartX) / 2;
+      const currentRatio = Math.min(Math.max((midpoint - chart.plotLeft) / chart.plotWidth, 0), 1);
+      const { min, max } = axis.getExtremes();
+
+      pinchState = {
+        axis,
+        startDistance: Math.max(Math.abs(first.chartX - second.chartX), 8),
+        startMin: min,
+        startMax: max,
+        startRange: max - min,
+        startRatio: currentRatio,
+      };
+    }
+
+    function handleTouchMove(event) {
+      if (!pinchState || event.touches.length !== 2) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      const first = normalizeTouch(event.touches[0]);
+      const second = normalizeTouch(event.touches[1]);
+      const distance = Math.max(Math.abs(first.chartX - second.chartX), 8);
+      const midpoint = (first.chartX + second.chartX) / 2;
+      const currentRatio = Math.min(Math.max((midpoint - chart.plotLeft) / chart.plotWidth, 0), 1);
+      const scale = pinchState.startDistance / distance;
+      const nextRange = pinchState.startRange * scale;
+      const anchorValue = pinchState.startMin + pinchState.startRange * currentRatio;
+      const rawMin = anchorValue - nextRange * currentRatio;
+      const rawMax = anchorValue + nextRange * (1 - currentRatio);
+      const { min, max } = clampRange(pinchState.axis, rawMin, rawMax);
+
+      pinchState.axis.setExtremes(min, max, true, false, { trigger: 'pinch' });
+    }
+
+    function handleTouchEnd() {
+      if (pinchState && chart.pointer) {
+        chart.pointer.hasDragged = false;
+      }
+      pinchState = null;
+    }
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: false, capture: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false, capture: true });
+    container.addEventListener('touchend', handleTouchEnd, { passive: true, capture: true });
+    container.addEventListener('touchcancel', handleTouchEnd, { passive: true, capture: true });
+
     const origDestroy = chart.destroy.bind(chart);
     chart.destroy = () => {
-      container.removeEventListener('wheel', handleWheel);
+      container.removeEventListener('touchstart', handleTouchStart, true);
+      container.removeEventListener('touchmove', handleTouchMove, true);
+      container.removeEventListener('touchend', handleTouchEnd, true);
+      container.removeEventListener('touchcancel', handleTouchEnd, true);
       origDestroy();
     };
   }, []);

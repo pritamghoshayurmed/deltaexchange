@@ -157,8 +157,45 @@ export function buildStrikeSeriesForExpiry(rows, metric = 'mark_price') {
 export function buildCandlestickSeries(chartData) {
   if (!chartData?.t?.length) return null;
   const { t, o, h, l, c, v } = chartData;
+  const rsi = calculateRsi(c, 14);
+
   return {
     ohlcData: t.map((time, i) => [time * 1000, o[i], h[i], l[i], c[i]]),
     volData:  t.map((time, i) => [time * 1000, v?.[i] ?? 0]),
+    rsiData:  t
+      .map((time, i) => (rsi[i] == null ? null : [time * 1000, Number(rsi[i].toFixed(2))]))
+      .filter(Boolean),
   };
+}
+
+function calculateRsi(values, period = 14) {
+  if (!Array.isArray(values) || values.length <= period) {
+    return Array.isArray(values) ? Array(values.length).fill(null) : [];
+  }
+
+  const result = Array(values.length).fill(null);
+  let gainSum = 0;
+  let lossSum = 0;
+
+  for (let index = 1; index <= period; index += 1) {
+    const delta = values[index] - values[index - 1];
+    gainSum += Math.max(delta, 0);
+    lossSum += Math.max(-delta, 0);
+  }
+
+  let averageGain = gainSum / period;
+  let averageLoss = lossSum / period;
+  result[period] = averageLoss === 0 ? 100 : 100 - 100 / (1 + averageGain / averageLoss);
+
+  for (let index = period + 1; index < values.length; index += 1) {
+    const delta = values[index] - values[index - 1];
+    const gain = Math.max(delta, 0);
+    const loss = Math.max(-delta, 0);
+
+    averageGain = ((averageGain * (period - 1)) + gain) / period;
+    averageLoss = ((averageLoss * (period - 1)) + loss) / period;
+    result[index] = averageLoss === 0 ? 100 : 100 - 100 / (1 + averageGain / averageLoss);
+  }
+
+  return result;
 }
