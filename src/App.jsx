@@ -13,7 +13,7 @@ const DEFAULT_SETTINGS = {
   minOpenInterest: 0,
   candlestick:     true,
   resolution:      240,
-  lookbackHours:   72,
+  lookbackHours:   720,
   topPerType:      5,
 };
 
@@ -45,22 +45,25 @@ export default function App() {
   const asset           = effectiveAssets[assetIdx % effectiveAssets.length] ?? 'ETH';
   const data            = assetData.get(asset) ?? (assets.length > 0 ? assetData.get(assets[0]) : null);
 
-  /* ── Symbols: nearest expiry, ±20 strikes around ATM = max 41 ── */
+  /* ── Symbols: expiry chosen for configured lookback, ±20 strikes around ATM = max 41 ── */
   const symbols = useMemo(() => {
     if (!data?.records?.length) return [];
     const spot = data.records.find((r) => r.spot_price)?.spot_price ?? 0;
 
-    // 1. Nearest expiry for this option type
+    // 1. Pick an expiry that is far enough out for the selected lookback.
+    //    If none match, fall back to the farthest listed expiry.
     const byType = data.records.filter((r) => r.option_type === optType);
     if (!byType.length) return [];
-    const nearestExpiry = byType.reduce(
-      (min, r) => (r.expiry_ms < min ? r.expiry_ms : min),
-      byType[0].expiry_ms
-    );
+
+    const nowMs = Date.now();
+    const minExpiryForLookback = nowMs + settings.lookbackHours * 3600 * 1000;
+    const expiries = [...new Set(byType.map((r) => r.expiry_ms))].sort((a, b) => a - b);
+    const targetExpiry = expiries.find((expiryMs) => expiryMs >= minExpiryForLookback)
+      ?? expiries[expiries.length - 1];
 
     // 2. All strikes for that expiry, sorted ascending
     const expiryRecords = byType
-      .filter((r) => r.expiry_ms === nearestExpiry)
+      .filter((r) => r.expiry_ms === targetExpiry)
       .sort((a, b) => a.strike - b.strike);
 
     // 3. Find ATM index
@@ -85,7 +88,7 @@ export default function App() {
       }
     }
     return expiryRecords.slice(start, end);
-  }, [data, optType]);
+  }, [data, optType, settings.lookbackHours]);
 
   /* ── Reset symbol index on asset / option type change ── */
   useEffect(() => { setSymIdx(0); }, [asset, optType]);

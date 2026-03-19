@@ -7,7 +7,7 @@ import {
   IconChevronRight, IconRefresh,
 } from './Icons';
 
-const LOOKBACK_OPTIONS = [1, 2, 4, 6, 12, 24, 48, 72, 168];
+const LOOKBACK_OPTIONS = [1, 2, 4, 6, 12, 24, 48, 72, 168, 720];
 const AVAILABLE_ASSETS = ['BTC', 'ETH'];
 
 /**
@@ -201,7 +201,7 @@ export default function ControlBar({
           {symbols.length > 0 && (
             <span className={styles.symMeta}>
               {symIdx + 1}&thinsp;/&thinsp;{symbols.length}
-              <span className={styles.symDot}>·</span>nearest expiry
+              <span className={styles.symDot}>·</span>selected expiry
               <span className={styles.symDot}>·</span>±20 strikes ATM
             </span>
           )}
